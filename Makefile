@@ -60,5 +60,5 @@ snapshot: schemas
 reload: snapshot
 	@d=$$(ls -dt $(CURDIR)/.reload/*/$(UUID) | head -1); \
 	gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval \
-	  "const u='$(UUID)', M=Main.extensionManager; const old=M.lookup(u); (old ? M.unloadExtension(old) : Promise.resolve()).then(() => M.loadExtension(M.createExtensionObject(u, Gio.File.new_for_path('$$d'), 2))).then(() => log('$(UUID) reloaded, state ' + M.lookup(u).state)).catch(e => logError(e, '$(UUID) reload failed')); 'reloading'"; \
+	  "const u='$(UUID)', M=Main.extensionManager; const old=M.lookup(u); (old ? M.unloadExtension(old) : Promise.resolve()).then(() => { M._unloadedExtensions.delete(u); return M.loadExtension(M.createExtensionObject(u, Gio.File.new_for_path('$$d'), 2)); }).then(() => log('$(UUID) reloaded, state ' + M.lookup(u).state)).catch(e => logError(e, '$(UUID) reload failed')); 'reloading'"; \
 	sleep 5; gnome-extensions info $(UUID) | grep -E "State|Error"
