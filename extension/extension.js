@@ -16,10 +16,12 @@ import {colorFor, formatAgo, formatClock, formatPlan, formatReset, pickPanelWind
 
 const SERVICES = ['codex', 'claude'];
 const COLORS = ['green', 'yellow', 'red'];
-const TEXT_PREFIX = 'ai-limits-';
+const PANEL_PREFIX = 'ai-limits-';     // bright, for the dark top bar
+const POPUP_PREFIX = 'ai-limits-pct-'; // darker, readable on a light popup
 const BG_PREFIX = 'ai-limits-bg-';
 const TRACK_WIDTH = 110; // keep in sync with .ai-limits-track in stylesheet.css
 const MIN_MANUAL_GAP_MS = 5000;
+const STALE_OPACITY = 150;
 const MAX_BACKOFF_SECONDS = 1800;
 const WINDOW_TITLES = {session: '5-hour', weekly: 'Weekly'};
 const PANEL_MODE_SETTINGS = {codex: 'codex-panel-window', claude: 'claude-panel-window'};
@@ -62,7 +64,7 @@ class WindowRow {
         this._fill.style = `width: ${Math.round(TRACK_WIDTH * window.usedPct / 100)}px;`;
         setColorClass(this._fill, BG_PREFIX, color);
         this._pct.text = `${Math.round(window.usedPct)}% used`;
-        setColorClass(this._pct, TEXT_PREFIX, color);
+        setColorClass(this._pct, POPUP_PREFIX, color);
         this._reset.text = formatReset(window, now);
     }
 }
@@ -173,7 +175,10 @@ class Indicator {
     }
 
     _buildMenu() {
-        const item = new PopupMenu.PopupBaseMenuItem({reactive: false, can_focus: false});
+        // Reactive so St does not mark it :insensitive (dimmed text), but with no
+        // hover highlight and no activation: this is content, not a menu entry.
+        const item = new PopupMenu.PopupBaseMenuItem({reactive: true, activate: false, hover: false, can_focus: false});
+        item.remove_style_class_name('popup-inactive-menu-item');
         const box = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'ai-limits-popup', x_expand: true});
 
         this._sections = {codex: new ServiceSection('Codex'), claude: new ServiceSection('Claude')};
@@ -223,12 +228,17 @@ class Indicator {
             const entry = this._state[service];
             const pick = pickPanelWindow(entry.usage, this._settings.get_string(PANEL_MODE_SETTINGS[service]));
             if (pick) {
+                // Keep the last known number through transient errors, just dimmed.
                 const value = valueMode === 'used' ? pick.window.usedPct : pick.window.remainingPct;
                 label.text = `${Math.round(value)}`;
-                setColorClass(label, TEXT_PREFIX, colors ? colorFor(pick.window.remainingPct) : null);
+                label.opacity = entry.error ? STALE_OPACITY : 255;
+                setColorClass(label, PANEL_PREFIX, colors ? colorFor(pick.window.remainingPct) : null);
             } else {
-                label.text = entry.error ? '!' : '--';
-                setColorClass(label, TEXT_PREFIX, entry.error && colors ? 'red' : null);
+                // '?' needs the user (sign in, fix the path); '…' will sort itself out (rate limit, network).
+                const needsUser = entry.error && (entry.error.kind === 'auth' || entry.error.kind === 'file');
+                label.text = entry.error ? (needsUser ? '?' : '…') : '--';
+                label.opacity = 255;
+                setColorClass(label, PANEL_PREFIX, needsUser && colors ? 'red' : null);
             }
             this._sections[service].update(entry, now);
         }

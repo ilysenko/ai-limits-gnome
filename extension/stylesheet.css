@@ -13,7 +13,7 @@
 
 /* Popup */
 .ai-limits-popup {
-    spacing: 8px;
+    spacing: 22px;
     min-width: 360px;
     padding: 4px 2px;
 }
@@ -55,9 +55,13 @@
     border-radius: 4px;
 }
 
-.ai-limits-bg-green { background-color: #57e389; }
-.ai-limits-bg-yellow { background-color: #f8e45c; }
-.ai-limits-bg-red { background-color: #ff7b63; }
+.ai-limits-pct-green { color: #26a269; }
+.ai-limits-pct-yellow { color: #c98a00; }
+.ai-limits-pct-red { color: #c01c28; }
+
+.ai-limits-bg-green { background-color: #26a269; }
+.ai-limits-bg-yellow { background-color: #e5a50a; }
+.ai-limits-bg-red { background-color: #c01c28; }
 
 .ai-limits-row-pct {
     min-width: 68px;
@@ -70,13 +74,14 @@
 
 .ai-limits-divider {
     height: 1px;
-    margin: 5px 0 3px 0;
+    margin: 8px 0 0 0;
     background-color: rgba(128, 128, 128, 0.35);
 }
 
 .ai-limits-extra-name {
     font-weight: bold;
     font-size: 0.95em;
+    padding-top: 12px;
 }
 
 .ai-limits-row-sub {
@@ -85,10 +90,11 @@
 
 .ai-limits-note {
     font-size: 0.9em;
+    padding-top: 4px;
 }
 
 .ai-limits-error {
-    color: #ff7b63;
+    color: #c01c28;
     font-size: 0.9em;
 }
 
