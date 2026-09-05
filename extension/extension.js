@@ -113,7 +113,10 @@ class ServiceSection {
                 this._addDetail(note, 'ai-limits-note');
         }
 
-        if (error) {
+        // Transient errors (rate limit, network) are not worth a red line while
+        // the last good numbers are still on screen; the footer says when we retry.
+        const needsUser = error && (error.kind === 'auth' || error.kind === 'file');
+        if (error && (needsUser || !usage)) {
             this._message.text = error.message;
             this._message.show();
         } else {
@@ -319,6 +322,7 @@ export default class AiLimitsExtension extends Extension {
 
         this._settingsIds = [
             this._settings.connect('changed::refresh-interval-seconds', () => this._schedule()),
+            this._settings.connect('changed::claude-refresh-interval-seconds', () => this.refresh({force: true})),
             this._settings.connect('changed::codex-auth-path', () => this.refresh({force: true})),
             this._settings.connect('changed::claude-credentials-path', () => this.refresh({force: true})),
             this._settings.connect('changed::show-codex', () => this.refresh({force: true})),
@@ -383,17 +387,22 @@ export default class AiLimitsExtension extends Extension {
         if (!force && this._state.backoffUntil > now)
             return;
 
-        this._inflight = this._fetchAll().finally(() => {
+        this._inflight = this._fetchAll(force).finally(() => {
             this._inflight = null;
         });
     }
 
-    async _fetchAll() {
+    async _fetchAll(force) {
         this._state.updating = true;
         this._indicator?.update(this._state);
 
+        const started = Date.now();
+        const claudeGapMs = this._settings.get_int('claude-refresh-interval-seconds') * 1000;
         const results = await Promise.all(SERVICES.map(async service => {
             if (!this._settings?.get_boolean(SHOW_SETTINGS[service]))
+                return null;
+            // Claude's usage endpoint rate-limits eager polling: ask it less often than Codex.
+            if (service === 'claude' && !force && started - this._state.claude.fetchedAt < claudeGapMs)
                 return null;
             try {
                 return {service, usage: await this._providers[service].fetch()};

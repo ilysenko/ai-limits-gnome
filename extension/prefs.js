@@ -137,6 +137,13 @@ export default class AiLimitsPreferences extends ExtensionPreferences {
         });
         settings.bind('refresh-interval-seconds', interval, 'value', Gio.SettingsBindFlags.DEFAULT);
         refresh.add(interval);
+        const claudeInterval = new Adw.SpinRow({
+            title: 'Claude refresh interval',
+            subtitle: 'Claude rate-limits frequent polling, so it is asked at most this often. "Refresh now" always asks immediately.',
+            adjustment: new Gtk.Adjustment({lower: 60, upper: 3600, step_increment: 30, page_increment: 300}),
+        });
+        settings.bind('claude-refresh-interval-seconds', claudeInterval, 'value', Gio.SettingsBindFlags.DEFAULT);
+        refresh.add(claudeInterval);
         refresh.add(switchRow(settings, 'auto-refresh-tokens', 'Refresh expired tokens',
             'Exchange the stored refresh token for a new access token and write it back to the login file, like the CLIs do'));
         page.add(refresh);

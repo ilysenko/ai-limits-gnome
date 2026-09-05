@@ -8,6 +8,12 @@
       <summary>Refresh interval</summary>
       <description>Seconds between automatic usage refreshes.</description>
     </key>
+    <key name="claude-refresh-interval-seconds" type="i">
+      <range min="60" max="3600"/>
+      <default>180</default>
+      <summary>Minimum seconds between Claude requests</summary>
+      <description>The Claude usage endpoint rate-limits frequent polling, so Claude is asked at most this often. "Refresh now" always asks immediately.</description>
+    </key>
     <key name="codex-panel-window" type="s">
       <choices>
         <choice value="session"/>

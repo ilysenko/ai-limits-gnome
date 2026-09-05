@@ -114,6 +114,7 @@ CLAUDE_CONFIG_DIR=$HOME/.claude-work claude auth login
 | Color the numbers | Green above 50 % left, yellow from 20 %, red below. |
 | Show Codex / Show Claude | Hide a service you do not use. |
 | Refresh interval | Seconds between automatic updates (default 60). Opening the popup always fetches fresh data. |
+| Claude refresh interval | Claude's usage endpoint rate-limits frequent polling, so Claude is asked at most this often (default 180). *Refresh now* always asks immediately. |
 | Refresh expired tokens | See below. |
 | Login files | Custom paths, see above. |
 
