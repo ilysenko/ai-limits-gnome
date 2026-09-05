@@ -2,8 +2,8 @@
   "uuid": "ai-limits@igor.lysenko",
   "name": "AI Limits",
   "description": "Shows how much of your Codex and Claude usage limits is left, right in the top panel. Click for the 5-hour and weekly windows and their reset times. Reads the local Codex CLI and Claude Code login files; no extra sign-in.",
-  "version": 2,
-  "version-name": "1.0.1",
+  "version": 3,
+  "version-name": "1.0.2",
   "shell-version": ["48", "49", "50"],
   "settings-schema": "org.gnome.shell.extensions.ai-limits",
   "url": "https://github.com/ilysenko/ai-limits-gnome"

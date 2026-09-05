@@ -67,6 +67,16 @@ class WindowRow {
         setColorClass(this._pct, POPUP_PREFIX, color);
         this._reset.text = formatReset(window, now);
     }
+
+    destroy() {
+        this.actor.destroy();
+        this.actor = null;
+        this._name = null;
+        this._track = null;
+        this._fill = null;
+        this._pct = null;
+        this._reset = null;
+    }
 }
 
 /** Popup section for one service. */
@@ -85,6 +95,7 @@ class ServiceSection {
         this.actor.add_child(this._rows.weekly.actor);
 
         this._details = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true});
+        this._extraRows = [];
         this.actor.add_child(this._details);
 
         this._message = new St.Label({style_class: 'ai-limits-error'});
@@ -99,7 +110,7 @@ class ServiceSection {
         this._rows.session.update(usage?.session ?? null, now);
         this._rows.weekly.update(usage?.weekly ?? null, now);
 
-        this._details.destroy_all_children();
+        this._clearDetails();
         if (usage) {
             for (const kind of ['session', 'weekly']) {
                 if (!usage[kind])
@@ -124,6 +135,25 @@ class ServiceSection {
         }
     }
 
+    _clearDetails() {
+        for (const row of this._extraRows)
+            row.destroy();
+        this._extraRows = [];
+        this._details.destroy_all_children();
+    }
+
+    destroy() {
+        this._clearDetails();
+        this._rows.session.destroy();
+        this._rows.weekly.destroy();
+        this._rows = null;
+        this.actor.destroy();
+        this.actor = null;
+        this._plan = null;
+        this._details = null;
+        this._message = null;
+    }
+
     _addDetail(text, styleClass) {
         const label = new St.Label({text, style_class: styleClass});
         label.clutter_text.line_wrap = true;
@@ -140,6 +170,7 @@ class ServiceSection {
             row.actor.add_style_class_name('ai-limits-row-sub');
             row.update(item[kind], now);
             this._details.add_child(row.actor);
+            this._extraRows.push(row);
         }
     }
 }
@@ -283,6 +314,15 @@ class Indicator {
             this.button.menu.disconnect(this._openStateId);
             this._openStateId = 0;
         }
+        for (const service of SERVICES)
+            this._sections[service].destroy();
+        this._sections = null;
+        this._footer.destroy();
+        this._footer = null;
+        this._panelBox.destroy();
+        this._panelBox = null;
+        this._panelSlash = null;
+        this._panelValues = null;
         this.button.destroy();
         this.button = null;
         this._extension = null;
@@ -320,16 +360,20 @@ export default class AiLimitsExtension extends Extension {
         Main.panel.addToStatusArea(this.uuid, this._indicator.button, 0, 'right');
         this._indicator.update(this._state);
 
+        const refetch = () => this.refresh({force: true});
+        const rerender = () => this._indicator?.update(this._state);
         this._settingsIds = [
             this._settings.connect('changed::refresh-interval-seconds', () => this._schedule()),
-            this._settings.connect('changed::claude-refresh-interval-seconds', () => this.refresh({force: true})),
-            this._settings.connect('changed::codex-auth-path', () => this.refresh({force: true})),
-            this._settings.connect('changed::claude-credentials-path', () => this.refresh({force: true})),
-            this._settings.connect('changed::show-codex', () => this.refresh({force: true})),
-            this._settings.connect('changed::show-claude', () => this.refresh({force: true})),
+            this._settings.connect('changed::claude-refresh-interval-seconds', refetch),
+            this._settings.connect('changed::codex-auth-path', refetch),
+            this._settings.connect('changed::claude-credentials-path', refetch),
+            this._settings.connect('changed::show-codex', refetch),
+            this._settings.connect('changed::show-claude', refetch),
+            this._settings.connect('changed::codex-panel-window', rerender),
+            this._settings.connect('changed::claude-panel-window', rerender),
+            this._settings.connect('changed::panel-value', rerender),
+            this._settings.connect('changed::color-thresholds', rerender),
         ];
-        for (const key of ['codex-panel-window', 'claude-panel-window', 'panel-value', 'color-thresholds'])
-            this._settingsIds.push(this._settings.connect(`changed::${key}`, () => this._indicator?.update(this._state)));
 
         this.refresh({force: true});
         this._schedule();
