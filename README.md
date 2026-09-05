@@ -62,8 +62,8 @@ Log out and back in, then `make enable`.
 
 ### From extensions.gnome.org
 
-Pending review. Once listed, install it from the
-[GNOME Extensions](https://extensions.gnome.org/) site or the Extension Manager app.
+[extensions.gnome.org/extension/10870/ai-limits](https://extensions.gnome.org/extension/10870/ai-limits/)
+(pending review). Once approved, install it from that page or the Extension Manager app.
 
 ## Sign in once per service
 
