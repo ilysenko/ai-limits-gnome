@@ -1,0 +1,16 @@
+{
+  "five_hour": {"utilization": 41, "resets_at": "2026-09-05T18:00:00+00:00"},
+  "seven_day": {"utilization": 18, "resets_at": "2026-09-08T02:00:00+00:00"},
+  "seven_day_opus": {"utilization": 5, "resets_at": "2026-09-08T02:00:00+00:00"},
+  "seven_day_sonnet": null,
+  "limits": [
+    {
+      "kind": "weekly_scoped",
+      "group": "weekly",
+      "percent": 12,
+      "resets_at": "2026-09-08T02:00:00+00:00",
+      "scope": {"model": {"display_name": "Opus 5"}}
+    }
+  ],
+  "extra_usage": null
+}

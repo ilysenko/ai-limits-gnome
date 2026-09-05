@@ -1,0 +1,4 @@
+extension/schemas/gschemas.compiled
+dist/
+*.zip
+.reload/

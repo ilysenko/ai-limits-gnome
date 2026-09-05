@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.ai-limits"
+          path="/org/gnome/shell/extensions/ai-limits/">
+    <key name="refresh-interval-seconds" type="i">
+      <range min="30" max="3600"/>
+      <default>60</default>
+      <summary>Refresh interval</summary>
+      <description>Seconds between automatic usage refreshes.</description>
+    </key>
+    <key name="codex-panel-window" type="s">
+      <choices>
+        <choice value="session"/>
+        <choice value="weekly"/>
+        <choice value="lowest"/>
+      </choices>
+      <default>'session'</default>
+      <summary>Codex window shown in the panel</summary>
+      <description>Which Codex limit the panel number reflects: the 5-hour window, the weekly window, or whichever has the least left.</description>
+    </key>
+    <key name="claude-panel-window" type="s">
+      <choices>
+        <choice value="session"/>
+        <choice value="weekly"/>
+        <choice value="lowest"/>
+      </choices>
+      <default>'session'</default>
+      <summary>Claude window shown in the panel</summary>
+      <description>Which Claude limit the panel number reflects: the 5-hour window, the weekly window, or whichever has the least left.</description>
+    </key>
+    <key name="panel-value" type="s">
+      <choices>
+        <choice value="remaining"/>
+        <choice value="used"/>
+      </choices>
+      <default>'remaining'</default>
+      <summary>Panel value</summary>
+      <description>Whether the panel numbers show the percentage that is left or the percentage that is used. The popup always shows percent used.</description>
+    </key>
+    <key name="show-codex" type="b">
+      <default>true</default>
+      <summary>Show Codex</summary>
+    </key>
+    <key name="show-claude" type="b">
+      <default>true</default>
+      <summary>Show Claude</summary>
+    </key>
+    <key name="color-thresholds" type="b">
+      <default>true</default>
+      <summary>Color the panel numbers</summary>
+      <description>Green above 50% left, yellow between 20% and 50%, red below 20%.</description>
+    </key>
+    <key name="auto-refresh-tokens" type="b">
+      <default>true</default>
+      <summary>Refresh expired login tokens</summary>
+      <description>When a stored access token has expired, exchange the refresh token for a new one and write it back to the login file, the same way the CLIs do.</description>
+    </key>
+    <key name="codex-auth-path" type="s">
+      <default>''</default>
+      <summary>Codex auth.json path</summary>
+      <description>Path to the Codex CLI auth.json. Leave empty to use $CODEX_HOME/auth.json or ~/.codex/auth.json.</description>
+    </key>
+    <key name="claude-credentials-path" type="s">
+      <default>''</default>
+      <summary>Claude .credentials.json path</summary>
+      <description>Path to the Claude Code .credentials.json. Leave empty to use $CLAUDE_CONFIG_DIR/.credentials.json or ~/.claude/.credentials.json.</description>
+    </key>
+  </schema>
+</schemalist>
