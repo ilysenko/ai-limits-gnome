@@ -4,11 +4,12 @@ A GNOME Shell extension that shows how much of your **Codex** and **Claude**
 usage limits is left, right in the top bar. Click it for the 5-hour and weekly
 windows, their reset times, model-specific limits and credits.
 
-```
- ┌──────────┐
- │  72 / 41 │   ← Codex / Claude, percent of the selected window still available
- └──────────┘
-```
+The panel reads `72 / 40`: Codex first, then Claude, each a percentage of the
+window you choose (left or used, your pick). The popup and the settings:
+
+| Popup | Settings |
+|:---:|:---:|
+| ![Popup: Codex and Claude 5-hour and weekly windows with reset times](docs/popup.png) | ![Settings: panel window per service, refresh, login file paths](docs/settings.png) |
 
 No extra sign-in and no accounts: the extension reads the login files that the
 **Codex CLI** and **Claude Code** already keep on disk and asks the same usage
