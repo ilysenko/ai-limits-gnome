@@ -69,13 +69,18 @@ class WindowRow {
     }
 
     destroy() {
+        this._fill.destroy();
+        this._fill = null;
+        this._track.destroy();
+        this._track = null;
+        this._name.destroy();
+        this._name = null;
+        this._pct.destroy();
+        this._pct = null;
+        this._reset.destroy();
+        this._reset = null;
         this.actor.destroy();
         this.actor = null;
-        this._name = null;
-        this._track = null;
-        this._fill = null;
-        this._pct = null;
-        this._reset = null;
     }
 }
 
@@ -147,11 +152,14 @@ class ServiceSection {
         this._rows.session.destroy();
         this._rows.weekly.destroy();
         this._rows = null;
+        this._plan.destroy();
+        this._plan = null;
+        this._details.destroy();
+        this._details = null;
+        this._message.destroy();
+        this._message = null;
         this.actor.destroy();
         this.actor = null;
-        this._plan = null;
-        this._details = null;
-        this._message = null;
     }
 
     _addDetail(text, styleClass) {
@@ -319,10 +327,13 @@ class Indicator {
         this._sections = null;
         this._footer.destroy();
         this._footer = null;
+        for (const service of SERVICES)
+            this._panelValues[service].destroy();
+        this._panelValues = null;
+        this._panelSlash.destroy();
+        this._panelSlash = null;
         this._panelBox.destroy();
         this._panelBox = null;
-        this._panelSlash = null;
-        this._panelValues = null;
         this.button.destroy();
         this.button = null;
         this._extension = null;
