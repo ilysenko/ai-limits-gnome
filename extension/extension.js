@@ -14,6 +14,11 @@ import {ProviderError} from './lib/provider.js';
 import {resolveClaudeCredentialsPath, resolveCodexAuthPath} from './lib/auth.js';
 import {colorFor, formatAgo, formatClock, formatPlan, formatReset, pickPanelWindow} from './lib/model.js';
 
+// St.BoxLayout gained `orientation` in GNOME 48; 46 and 47 only know `vertical`.
+const VERTICAL = 'orientation' in St.BoxLayout.prototype
+    ? {orientation: Clutter.Orientation.VERTICAL}
+    : {vertical: true};
+
 const SERVICES = ['codex', 'claude'];
 const COLORS = ['green', 'yellow', 'red'];
 const PANEL_PREFIX = 'ai-limits-';     // bright, for the dark top bar
@@ -87,7 +92,7 @@ class WindowRow {
 /** Popup section for one service. */
 class ServiceSection {
     constructor(title) {
-        this.actor = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'ai-limits-service', x_expand: true});
+        this.actor = new St.BoxLayout({...VERTICAL, style_class: 'ai-limits-service', x_expand: true});
 
         const header = new St.BoxLayout({style_class: 'ai-limits-service-header', x_expand: true});
         this._plan = new St.Label({style_class: 'ai-limits-service-plan', y_align: Clutter.ActorAlign.CENTER});
@@ -99,7 +104,7 @@ class ServiceSection {
         this.actor.add_child(this._rows.session.actor);
         this.actor.add_child(this._rows.weekly.actor);
 
-        this._details = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, x_expand: true});
+        this._details = new St.BoxLayout({...VERTICAL, x_expand: true});
         this._extraRows = [];
         this.actor.add_child(this._details);
 
@@ -221,7 +226,7 @@ class Indicator {
         // hover highlight and no activation: this is content, not a menu entry.
         const item = new PopupMenu.PopupBaseMenuItem({reactive: true, activate: false, hover: false, can_focus: false});
         item.remove_style_class_name('popup-inactive-menu-item');
-        const box = new St.BoxLayout({orientation: Clutter.Orientation.VERTICAL, style_class: 'ai-limits-popup', x_expand: true});
+        const box = new St.BoxLayout({...VERTICAL, style_class: 'ai-limits-popup', x_expand: true});
 
         this._sections = {codex: new ServiceSection('Codex'), claude: new ServiceSection('Claude')};
         for (const service of SERVICES)
