@@ -1,7 +1,7 @@
 # AI Limits — Codex & Claude usage in the GNOME top bar
 
-A GNOME Shell extension that shows how much of your **Codex** and **Claude**
-usage limits is left, right in the top bar. Click it for the 5-hour and weekly
+A GNOME Shell extension that shows how much of your **Codex**, **Claude** and
+**Antigravity** (Gemini) usage limits is left, right in the top bar. Click it for the 5-hour and weekly
 windows, their reset times, model-specific limits and credits.
 
 The panel reads `72 / 40`: Codex first, then Claude, each a percentage of the
@@ -23,8 +23,9 @@ Nothing is sent anywhere else.
 | GNOME Shell | 48, 49 or 50 (tested on GNOME 50.1, Ubuntu 26.04, Wayland) |
 | Codex | [Codex CLI](https://github.com/openai/codex) signed in with a ChatGPT account (`codex login`). Codex Desktop uses the same login file. |
 | Claude | [Claude Code](https://docs.claude.com/en/docs/claude-code) signed in with a Claude subscription (`claude auth login`). |
+| Antigravity | Optional, off by default. [Antigravity CLI](https://antigravity.google/docs/getting-started?tab=cli) (`agy`) signed in with a Google account. |
 
-You need at least one of the two. A service that is not signed in shows `!` in
+You need at least one of them. A service that is not signed in shows `!` in
 the panel and an explanation in the popup; you can also hide it in the settings.
 
 Only ChatGPT / Claude **subscriptions** have usage windows. API-key logins have
@@ -71,6 +72,11 @@ Log out and back in, then `make enable`.
 lands in `~/.codex/auth.json` (or `$CODEX_HOME/auth.json`). Codex Desktop
 shares this file, so if you use the desktop app you are already set.
 
+**Antigravity.** Optional. Install the CLI with
+`curl -fsSL https://antigravity.google/cli/install.sh | bash`, run `agy` once to
+sign in, then turn on *Show Antigravity* in the settings. Google moved AI Pro
+and free users here from Gemini CLI, so this is where Gemini quota now lives.
+
 **Claude.** Run `claude auth login` and sign in with the Claude account whose
 limits you want to see. The token lands in `~/.claude/.credentials.json`
 (or `$CLAUDE_CONFIG_DIR/.credentials.json`). Claude Desktop keeps its own
@@ -115,6 +121,8 @@ CLAUDE_CONFIG_DIR=$HOME/.claude-work claude auth login
 | Show Codex / Show Claude | Hide a service you do not use. |
 | Refresh interval | Seconds between automatic updates (default 60). Opening the popup always fetches fresh data. |
 | Claude refresh interval | Claude's usage endpoint rate-limits frequent polling, so Claude is asked at most this often (default 180). *Refresh now* always asks immediately. |
+| Antigravity refresh interval | Reading Antigravity quota starts its command-line tool, which takes a few seconds, so it is asked at most this often (default 300). |
+| Antigravity CLI path | Where `agy` lives. Empty means `~/.local/bin/agy`, then `agy` on PATH. |
 | Refresh expired tokens | See below. |
 | Login files | Custom paths, see above. |
 
@@ -136,8 +144,13 @@ tokens**. The panel then shows `!` for that service until you run the CLI once.
 |---|---|---|
 | Codex | `~/.codex/auth.json` | `GET https://chatgpt.com/backend-api/wham/usage` |
 | Claude | `~/.claude/.credentials.json` | `GET https://api.anthropic.com/api/oauth/usage` |
+| Antigravity | none (the CLI keeps its token in the system keyring) | `agy -p /usage --output-format json` |
 
-These are the endpoints behind Codex's `/status` and Claude Code's `/usage`.
+The first two are the endpoints behind Codex's `/status` and Claude Code's
+`/usage`. Antigravity has no login file to read, so its quota is read by running
+the CLI in print mode: no conversation is started and no quota is spent, but it
+takes a few seconds per call, which is why it polls less often and is off until
+you turn it on.
 They are not publicly documented. A format change on the server side shows up as
 an error line in the popup, not a crash.
 
@@ -149,6 +162,7 @@ caps and similar) are listed under the main windows.
 ## Privacy
 
 - Usage requests go only to `chatgpt.com` and `api.anthropic.com`, using your own tokens.
+- Antigravity, when enabled, runs the `agy` binary you installed; nothing else is executed.
 - The extension keeps no copy of the tokens outside the login files.
 - Nothing is logged except error messages.
 
@@ -191,6 +205,8 @@ extension/            what gets packaged
   prefs.js            settings window (libadwaita)
   lib/codex.js        Codex login file → usage
   lib/claude.js       Claude login file → usage
+  lib/antigravity.js  Antigravity CLI → usage
+  lib/subprocess.js   async helper commands with a deadline
   lib/provider.js     shared error handling and token refresh
   lib/model.js        response parsing and formatting (pure functions)
   lib/http.js         fetch on top of libsoup 3

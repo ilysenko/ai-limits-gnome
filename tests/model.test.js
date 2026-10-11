@@ -4,6 +4,7 @@ import {
     colorFor,
     formatDuration,
     formatReset,
+    normalizeAntigravity,
     normalizeClaude,
     normalizeCodex,
     pickPanelWindow,
@@ -44,6 +45,7 @@ check(plus.session?.usedPct === 35 && plus.weekly?.usedPct === 90, 'codex plus b
 check(pickPanelWindow(plus, 'session').window.remainingPct === 65, 'session pick');
 check(pickPanelWindow(plus, 'lowest').kind === 'weekly', 'lowest picks the tighter window');
 check(plus.notes.includes('Credits balance: 12.50'), 'codex credits note');
+check(normalizeCodex({credits: {has_credits: true, balance: '62500.0000000000'}}).notes.includes('Credits balance: 62500'), 'codex trims a fixed-point balance');
 
 // Claude
 const claude = normalizeClaude(loadFixture('claude-usage.json'), {plan: 'max'});
@@ -54,6 +56,22 @@ check(claude.weekly?.usedPct === 18, 'claude seven_day');
 check(claude.extra.length === 2, 'claude extra: opus + scoped limit');
 check(claude.extra[0].label === 'Opus' && claude.extra[0].weekly.usedPct === 5, 'claude opus weekly');
 check(claude.extra[1].label === 'Opus 5' && claude.extra[1].weekly.usedPct === 12, 'claude scoped limit');
+
+// Antigravity: quota comes as "fraction left", grouped by model family.
+const agy = normalizeAntigravity(loadFixture('antigravity-usage.json'));
+check(agy.service === 'antigravity', 'antigravity service tag');
+check(agy.session?.usedPct === 18 && agy.session.remainingPct === 82, 'antigravity 5h bucket inverted to used%');
+check(Math.round(agy.weekly?.usedPct) === 69, 'antigravity weekly bucket');
+check(agy.weekly.resetsAt === Date.parse('2026-10-13T09:15:45Z'), 'antigravity reset_time parsed');
+check(agy.extra.length === 1 && agy.extra[0].label === 'Claude and GPT models', 'antigravity second group listed');
+check(agy.extra[0].weekly?.usedPct === 0 && agy.extra[0].session === null, 'antigravity second group windows');
+check(agy.plan === 'Gemini Models', 'antigravity names its leading group where the plan goes');
+check(pickPanelWindow(agy, 'lowest').kind === 'weekly', 'antigravity lowest picks weekly');
+
+// A bucket with no window field is treated as the session one.
+const agyBare = normalizeAntigravity({command: {data: {groups: [{name: 'G', buckets: [{remaining_fraction: 0.5}]}]}}});
+check(agyBare.session?.usedPct === 50 && agyBare.weekly === null, 'antigravity bucket without a window');
+check(normalizeAntigravity(null).session === null && normalizeAntigravity({}).extra.length === 0, 'antigravity empty payload');
 
 // Empty / broken payloads do not throw.
 check(normalizeCodex(null).session === null && normalizeClaude({}).weekly === null, 'empty payloads');

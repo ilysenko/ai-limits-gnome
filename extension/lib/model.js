@@ -6,6 +6,9 @@ const ONE_WEEK = 7 * 24 * 3600;
 
 const isObject = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const asNumber = value => (typeof value === 'number' && Number.isFinite(value) ? value : null);
+const asText = value => (typeof value === 'string' && value.trim() ? value.trim() : null);
+/** "62500.0000000000" -> "62500", while "12.50" keeps its cents. */
+const trimNumber = value => String(value).replace(/\.0+$/, '');
 
 export function clampPercent(value) {
     const n = asNumber(value) ?? 0;
@@ -85,7 +88,7 @@ export function normalizeCodex(raw, {plan = null} = {}) {
     if (credits?.unlimited)
         notes.push('Credits: unlimited');
     else if (credits?.has_credits && credits.balance !== undefined)
-        notes.push(`Credits balance: ${credits.balance}`);
+        notes.push(`Credits balance: ${trimNumber(credits.balance)}`);
 
     const resets = asNumber(raw?.rate_limit_reset_credits?.available_count);
     if (resets)
@@ -144,6 +147,64 @@ export function normalizeClaude(raw, {plan = null} = {}) {
         plan,
         session: claudeWindow(raw?.five_hour, FIVE_HOURS),
         weekly: claudeWindow(raw?.seven_day, ONE_WEEK),
+        extra,
+        notes: [],
+    };
+}
+
+/* ---------- Antigravity (agy -p /usage --output-format json) ---------- */
+
+/** A bucket reports what is LEFT as a 0..1 fraction, the opposite of the other two services. */
+const antigravityBucket = (raw) => {
+    if (!isObject(raw))
+        return null;
+
+    const fraction = asNumber(raw.remaining_fraction);
+    // Rounded to hundredths: deriving a percentage from a fraction otherwise
+    // leaves float noise like 18.000000000000004.
+    const used = fraction === null ? 0 : Math.round((1 - fraction) * 10000) / 100;
+    const resets = typeof raw.reset_time === 'string' ? Date.parse(raw.reset_time) : null;
+    const weekly = /week/i.test(`${raw.window ?? ''} ${raw.id ?? ''}`);
+
+    return {
+        kind: weekly ? 'weekly' : 'session',
+        window: makeWindow(used, Number.isNaN(resets) ? null : resets, weekly ? ONE_WEEK : FIVE_HOURS),
+    };
+};
+
+const antigravityGroup = (raw) => {
+    const windows = {session: null, weekly: null};
+    const buckets = Array.isArray(raw?.buckets) ? raw.buckets : [];
+    for (const entry of buckets) {
+        const bucket = antigravityBucket(entry);
+        if (bucket && !windows[bucket.kind])
+            windows[bucket.kind] = bucket.window;
+    }
+    return windows;
+};
+
+/**
+ * Quota comes grouped by model family. The first group (Gemini models) drives
+ * the panel; the rest are listed under it, the way model limits are elsewhere.
+ */
+export function normalizeAntigravity(raw) {
+    const groups = Array.isArray(raw?.command?.data?.groups) ? raw.command.data.groups : [];
+    const [first, ...rest] = groups.filter(isObject);
+    const main = first ? antigravityGroup(first) : {session: null, weekly: null};
+
+    const extra = [];
+    for (const group of rest) {
+        const windows = antigravityGroup(group);
+        if (windows.session || windows.weekly)
+            extra.push({label: asText(group.name) ?? 'Other models', ...windows});
+    }
+
+    return {
+        service: 'antigravity',
+        // The leading group names itself where the other services show their plan.
+        plan: first ? asText(first.name) : null,
+        session: main.session,
+        weekly: main.weekly,
         extra,
         notes: [],
     };

@@ -1,10 +1,16 @@
 {
   "uuid": "ai-limits@igor.lysenko",
   "name": "AI Limits",
-  "description": "Shows how much of your Codex and Claude usage limits is left, right in the top panel. Click for the 5-hour and weekly windows and their reset times. Reads the local Codex CLI and Claude Code login files; no extra sign-in.",
-  "version": 6,
-  "version-name": "1.0.5",
-  "shell-version": ["46", "47", "48", "49", "50"],
+  "description": "Shows how much of your Codex, Claude and Antigravity (Gemini) usage limits is left, right in the top panel. Click for the 5-hour and weekly windows and their reset times. Codex and Claude are read from their local login files; Antigravity is optional and reads its CLI.",
+  "version": 7,
+  "version-name": "1.1.0",
+  "shell-version": [
+    "46",
+    "47",
+    "48",
+    "49",
+    "50"
+  ],
   "settings-schema": "org.gnome.shell.extensions.ai-limits",
   "url": "https://github.com/ilysenko/ai-limits-gnome"
 }

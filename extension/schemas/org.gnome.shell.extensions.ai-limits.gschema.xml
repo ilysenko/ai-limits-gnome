@@ -14,6 +14,32 @@
       <summary>Minimum seconds between Claude requests</summary>
       <description>The Claude usage endpoint rate-limits frequent polling, so Claude is asked at most this often. "Refresh now" always asks immediately.</description>
     </key>
+    <key name="antigravity-refresh-interval-seconds" type="i">
+      <range min="60" max="3600"/>
+      <default>300</default>
+      <summary>Minimum seconds between Antigravity requests</summary>
+      <description>Reading Antigravity quota starts its command-line tool, which takes several seconds, so it is asked at most this often. "Refresh now" always asks immediately.</description>
+    </key>
+    <key name="antigravity-command" type="s">
+      <default>''</default>
+      <summary>Antigravity CLI path</summary>
+      <description>Path to the Antigravity command-line tool. Leave empty to use ~/.local/bin/agy or agy on PATH.</description>
+    </key>
+    <key name="antigravity-panel-window" type="s">
+      <choices>
+        <choice value="session"/>
+        <choice value="weekly"/>
+        <choice value="lowest"/>
+      </choices>
+      <default>'weekly'</default>
+      <summary>Antigravity window shown in the panel</summary>
+      <description>Which Antigravity limit the panel number reflects: the 5-hour window, the weekly window, or whichever has the least left.</description>
+    </key>
+    <key name="show-antigravity" type="b">
+      <default>false</default>
+      <summary>Show Antigravity</summary>
+      <description>Off by default: unlike the other two services, reading Antigravity quota runs its command-line tool.</description>
+    </key>
     <key name="codex-panel-window" type="s">
       <choices>
         <choice value="session"/>

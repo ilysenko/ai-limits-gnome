@@ -1,10 +1,11 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {fileExists, readJson} from './lib/files.js';
+import {expandPath, fileExists, readJson} from './lib/files.js';
 import {
     isExpired,
     parseClaudeCredentials,
@@ -19,6 +20,14 @@ const WINDOW_CHOICES = [
     ['weekly', 'Weekly window'],
     ['lowest', 'Whichever has less left'],
 ];
+/** Same lookup order as the extension: ~/.local/bin first, then PATH. */
+function findAgy() {
+    const local = GLib.build_filenamev([GLib.get_home_dir(), '.local', 'bin', 'agy']);
+    if (fileExists(local))
+        return local;
+    return GLib.find_program_in_path('agy') ?? '';
+}
+
 const VALUE_CHOICES = [
     ['remaining', 'Percent left'],
     ['used', 'Percent used'],
@@ -123,10 +132,13 @@ export default class AiLimitsPreferences extends ExtensionPreferences {
         });
         panel.add(comboRow(settings, 'codex-panel-window', 'Codex number', 'Which Codex limit the panel number reflects', WINDOW_CHOICES));
         panel.add(comboRow(settings, 'claude-panel-window', 'Claude number', 'Which Claude limit the panel number reflects', WINDOW_CHOICES));
+        panel.add(comboRow(settings, 'antigravity-panel-window', 'Antigravity number', 'Which Antigravity limit the panel number reflects', WINDOW_CHOICES));
         panel.add(comboRow(settings, 'panel-value', 'Panel value', 'The popup always shows percent used', VALUE_CHOICES));
         panel.add(switchRow(settings, 'color-thresholds', 'Color the numbers', 'Green above 50% left, yellow from 20%, red below'));
         panel.add(switchRow(settings, 'show-codex', 'Show Codex', null));
         panel.add(switchRow(settings, 'show-claude', 'Show Claude', null));
+        panel.add(switchRow(settings, 'show-antigravity', 'Show Antigravity',
+            'Off by default: reading Antigravity quota runs its command-line tool, which takes a few seconds'));
         page.add(panel);
 
         const refresh = new Adw.PreferencesGroup({title: 'Refresh'});
@@ -144,6 +156,13 @@ export default class AiLimitsPreferences extends ExtensionPreferences {
         });
         settings.bind('claude-refresh-interval-seconds', claudeInterval, 'value', Gio.SettingsBindFlags.DEFAULT);
         refresh.add(claudeInterval);
+        const antigravityInterval = new Adw.SpinRow({
+            title: 'Antigravity refresh interval',
+            subtitle: 'Reading Antigravity quota starts its command-line tool, so it is asked at most this often.',
+            adjustment: new Gtk.Adjustment({lower: 60, upper: 3600, step_increment: 30, page_increment: 300}),
+        });
+        settings.bind('antigravity-refresh-interval-seconds', antigravityInterval, 'value', Gio.SettingsBindFlags.DEFAULT);
+        refresh.add(antigravityInterval);
         refresh.add(switchRow(settings, 'auto-refresh-tokens', 'Refresh expired tokens',
             'Exchange the stored refresh token for a new access token and write it back to the login file, like the CLIs do'));
         page.add(refresh);
@@ -156,6 +175,20 @@ export default class AiLimitsPreferences extends ExtensionPreferences {
             files.add(row);
         for (const row of pathRow(settings, 'claude-credentials-path', 'Claude .credentials.json', resolveClaudeCredentialsPath, parseClaudeCredentials))
             files.add(row);
+
+        const agy = new Adw.EntryRow({title: 'Antigravity CLI path'});
+        settings.bind('antigravity-command', agy, 'text', Gio.SettingsBindFlags.DEFAULT);
+        const agyStatus = new Adw.ActionRow();
+        agyStatus.add_css_class('property');
+        const syncAgy = () => {
+            const path = expandPath(agy.text) || findAgy();
+            agyStatus.title = path || 'agy';
+            agyStatus.subtitle = path && fileExists(path) ? 'found' : 'not found — install it from antigravity.google';
+        };
+        agy.connect('changed', syncAgy);
+        syncAgy();
+        files.add(agy);
+        files.add(agyStatus);
         page.add(files);
 
         window.add(page);

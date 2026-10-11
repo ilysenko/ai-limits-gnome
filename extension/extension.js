@@ -8,8 +8,10 @@ import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 
 import {Http} from './lib/http.js';
+import {Subprocess} from './lib/subprocess.js';
 import {CodexProvider} from './lib/codex.js';
 import {ClaudeProvider} from './lib/claude.js';
+import {AntigravityProvider} from './lib/antigravity.js';
 import {ProviderError} from './lib/provider.js';
 import {resolveClaudeCredentialsPath, resolveCodexAuthPath} from './lib/auth.js';
 import {colorFor, formatAgo, formatClock, formatPlan, formatReset, pickPanelWindow} from './lib/model.js';
@@ -19,7 +21,8 @@ const VERTICAL = 'orientation' in St.BoxLayout.prototype
     ? {orientation: Clutter.Orientation.VERTICAL}
     : {vertical: true};
 
-const SERVICES = ['codex', 'claude'];
+const SERVICES = ['codex', 'claude', 'antigravity'];
+const SERVICE_TITLES = {codex: 'Codex', claude: 'Claude', antigravity: 'Antigravity'};
 const COLORS = ['green', 'yellow', 'red'];
 const PANEL_PREFIX = 'ai-limits-';     // bright, for the dark top bar
 const POPUP_PREFIX = 'ai-limits-pct-'; // darker, readable on a light popup
@@ -29,8 +32,19 @@ const MIN_MANUAL_GAP_MS = 5000;
 const STALE_OPACITY = 150;
 const MAX_BACKOFF_SECONDS = 1800;
 const WINDOW_TITLES = {session: '5-hour', weekly: 'Weekly'};
-const PANEL_MODE_SETTINGS = {codex: 'codex-panel-window', claude: 'claude-panel-window'};
-const SHOW_SETTINGS = {codex: 'show-codex', claude: 'show-claude'};
+const PANEL_MODE_SETTINGS = {
+    codex: 'codex-panel-window',
+    claude: 'claude-panel-window',
+    antigravity: 'antigravity-panel-window',
+};
+const SHOW_SETTINGS = {codex: 'show-codex', claude: 'show-claude', antigravity: 'show-antigravity'};
+/** Services that cost too much to poll on every tick get their own minimum gap. */
+const MIN_GAP_SETTINGS = {
+    claude: 'claude-refresh-interval-seconds',
+    antigravity: 'antigravity-refresh-interval-seconds',
+};
+/** Only a remote service can rate-limit us; a failing local tool must not slow the others down. */
+const BACKOFF_SERVICES = new Set(['codex', 'claude']);
 
 function setColorClass(actor, prefix, color) {
     for (const name of COLORS)
@@ -200,12 +214,16 @@ class Indicator {
 
         this._panelBox = new St.BoxLayout({style_class: 'ai-limits-panel'});
         this._panelValues = {};
-        this._panelSlash = new St.Label({text: '/', y_align: Clutter.ActorAlign.CENTER});
+        this._panelSeparators = {};
         for (const service of SERVICES) {
+            // One separator per service, shown only when something precedes it.
+            const separator = new St.Label({text: '/', y_align: Clutter.ActorAlign.CENTER});
+            separator.hide();
+            this._panelSeparators[service] = separator;
+            this._panelBox.add_child(separator);
+
             this._panelValues[service] = new St.Label({text: '--', style_class: 'ai-limits-panel-value', y_align: Clutter.ActorAlign.CENTER});
             this._panelBox.add_child(this._panelValues[service]);
-            if (service === 'codex')
-                this._panelBox.add_child(this._panelSlash);
         }
         this.button.add_child(this._panelBox);
 
@@ -228,9 +246,11 @@ class Indicator {
         item.remove_style_class_name('popup-inactive-menu-item');
         const box = new St.BoxLayout({...VERTICAL, style_class: 'ai-limits-popup', x_expand: true});
 
-        this._sections = {codex: new ServiceSection('Codex'), claude: new ServiceSection('Claude')};
-        for (const service of SERVICES)
+        this._sections = {};
+        for (const service of SERVICES) {
+            this._sections[service] = new ServiceSection(SERVICE_TITLES[service]);
             box.add_child(this._sections[service].actor);
+        }
 
         this._footer = new St.Label({style_class: 'ai-limits-footer', text: 'Not updated yet'});
         box.add_child(this._footer);
@@ -262,7 +282,6 @@ class Indicator {
         const valueMode = this._settings.get_string('panel-value');
         const colors = this._settings.get_boolean('color-thresholds');
 
-        let visible = 0;
         for (const service of SERVICES) {
             const show = this._settings.get_boolean(SHOW_SETTINGS[service]);
             const label = this._panelValues[service];
@@ -270,7 +289,6 @@ class Indicator {
             this._sections[service].actor.visible = show;
             if (!show)
                 continue;
-            visible++;
 
             const entry = this._state[service];
             const pick = pickPanelWindow(entry.usage, this._settings.get_string(PANEL_MODE_SETTINGS[service]));
@@ -289,7 +307,14 @@ class Indicator {
             }
             this._sections[service].update(entry, now);
         }
-        this._panelSlash.visible = visible === 2;
+
+        let shown = 0;
+        for (const service of SERVICES) {
+            const visibleHere = this._panelValues[service].visible;
+            this._panelSeparators[service].visible = visibleHere && shown > 0;
+            if (visibleHere)
+                shown++;
+        }
 
         this._footer.text = this._footerText(now);
     }
@@ -335,8 +360,9 @@ class Indicator {
         for (const service of SERVICES)
             this._panelValues[service].destroy();
         this._panelValues = null;
-        this._panelSlash.destroy();
-        this._panelSlash = null;
+        for (const service of SERVICES)
+            this._panelSeparators[service].destroy();
+        this._panelSeparators = null;
         this._panelBox.destroy();
         this._panelBox = null;
         this.button.destroy();
@@ -350,6 +376,7 @@ export default class AiLimitsExtension extends Extension {
     enable() {
         this._settings = this.getSettings();
         this._http = new Http();
+        this._subprocess = new Subprocess();
         this._providers = {
             codex: new CodexProvider(this._http, {
                 getPath: () => resolveCodexAuthPath(this._settings.get_string('codex-auth-path')),
@@ -359,15 +386,14 @@ export default class AiLimitsExtension extends Extension {
                 getPath: () => resolveClaudeCredentialsPath(this._settings.get_string('claude-credentials-path')),
                 autoRefresh: () => this._settings.get_boolean('auto-refresh-tokens'),
             }),
+            antigravity: new AntigravityProvider(this._subprocess, {
+                getCommand: () => this._settings.get_string('antigravity-command'),
+            }),
         };
 
-        this._state = {
-            codex: {usage: null, error: null, fetchedAt: 0},
-            claude: {usage: null, error: null, fetchedAt: 0},
-            updating: false,
-            backoffUntil: 0,
-            lastSuccess: 0,
-        };
+        this._state = {updating: false, backoffUntil: 0, lastSuccess: 0};
+        for (const service of SERVICES)
+            this._state[service] = {usage: null, error: null, loggedError: null, fetchedAt: 0};
         this._failures = 0;
         this._timerId = 0;
         this._inflight = null;
@@ -381,6 +407,10 @@ export default class AiLimitsExtension extends Extension {
         this._settingsIds = [
             this._settings.connect('changed::refresh-interval-seconds', () => this._schedule()),
             this._settings.connect('changed::claude-refresh-interval-seconds', refetch),
+            this._settings.connect('changed::antigravity-refresh-interval-seconds', refetch),
+            this._settings.connect('changed::antigravity-command', refetch),
+            this._settings.connect('changed::show-antigravity', refetch),
+            this._settings.connect('changed::antigravity-panel-window', rerender),
             this._settings.connect('changed::codex-auth-path', refetch),
             this._settings.connect('changed::claude-credentials-path', refetch),
             this._settings.connect('changed::show-codex', refetch),
@@ -409,6 +439,8 @@ export default class AiLimitsExtension extends Extension {
 
         this._http?.dispose();
         this._http = null;
+        this._subprocess?.dispose();
+        this._subprocess = null;
         this._providers = null;
         this._state = null;
         this._settings = null;
@@ -457,12 +489,14 @@ export default class AiLimitsExtension extends Extension {
         this._indicator?.update(this._state);
 
         const started = Date.now();
-        const claudeGapMs = this._settings.get_int('claude-refresh-interval-seconds') * 1000;
         const results = await Promise.all(SERVICES.map(async service => {
             if (!this._settings?.get_boolean(SHOW_SETTINGS[service]))
                 return null;
-            // Claude's usage endpoint rate-limits eager polling: ask it less often than Codex.
-            if (service === 'claude' && !force && started - this._state.claude.fetchedAt < claudeGapMs)
+            // Claude rate-limits eager polling and Antigravity costs a process
+            // start, so both keep a minimum gap of their own.
+            const gapSetting = MIN_GAP_SETTINGS[service];
+            if (gapSetting && !force &&
+                started - this._state[service].fetchedAt < this._settings.get_int(gapSetting) * 1000)
                 return null;
             try {
                 return {service, usage: await this._providers[service].fetch()};
@@ -484,14 +518,20 @@ export default class AiLimitsExtension extends Extension {
             if (result.usage) {
                 entry.usage = result.usage;
                 entry.error = null;
+                entry.loggedError = null;
                 entry.fetchedAt = now;
                 anySuccess = true;
             } else {
                 entry.error = result.error;
-                if (result.error.kind === 'ratelimit' || result.error.kind === 'http')
+                // Count the attempt so a service with its own gap does not retry every tick.
+                entry.fetchedAt = now;
+                const remote = BACKOFF_SERVICES.has(result.service);
+                if (remote && (result.error.kind === 'ratelimit' || result.error.kind === 'http'))
                     rateLimited = true;
-                else
+                else if (entry.loggedError !== result.error.message)
                     console.warn(`[AI Limits] ${result.service}: ${result.error.message}`);
+                // Log a given failure once; the popup keeps showing it either way.
+                entry.loggedError = result.error.message;
             }
         }
 

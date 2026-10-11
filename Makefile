@@ -58,7 +58,16 @@ snapshot: schemas
 # Swap the running extension for the current source without logging out.
 # Needs Looking Glass "Unsafe Mode" (Alt+F2 → lg → Flags) for org.gnome.Shell.Eval.
 reload: snapshot
-	@d=$$(ls -dt $(CURDIR)/.reload/*/$(UUID) | head -1); \
+	@if [ "$$(gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell \
+	          --method org.gnome.Shell.Eval 'true' 2>/dev/null | cut -d, -f1)" != "(true" ]; then \
+	  echo "Looking Glass unsafe mode is off, so the running shell cannot be asked to reload."; \
+	  echo "Turn it on (Alt+F2 -> lg -> Flags -> Unsafe Mode) or log out and back in."; \
+	  exit 1; \
+	fi; \
+	d=$$(ls -dt $(CURDIR)/.reload/*/$(UUID) | head -1); \
 	gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell --method org.gnome.Shell.Eval \
 	  "const u='$(UUID)', M=Main.extensionManager; const old=M.lookup(u); (old ? M.unloadExtension(old) : Promise.resolve()).then(() => { M._unloadedExtensions.delete(u); return M.loadExtension(M.createExtensionObject(u, Gio.File.new_for_path('$$d'), 2)); }).then(() => log('$(UUID) reloaded, state ' + M.lookup(u).state)).catch(e => logError(e, '$(UUID) reload failed')); 'reloading'"; \
-	sleep 5; gnome-extensions info $(UUID) | grep -E "State|Error"
+	sleep 5; gnome-extensions info $(UUID) | grep -E "State|Error"; \
+	echo "loaded version: $$(gdbus call --session --dest org.gnome.Shell --object-path /org/gnome/Shell \
+	  --method org.gnome.Shell.Eval "Main.extensionManager.lookup('$(UUID)')?.metadata['version-name'] ?? 'none'" \
+	  | grep -oE '[0-9]+[.][0-9]+[.][0-9]+|none')"
