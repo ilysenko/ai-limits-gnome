@@ -20,7 +20,7 @@ Nothing is sent anywhere else.
 
 | | |
 |---|---|
-| GNOME Shell | 48, 49 or 50 (tested on GNOME 50.1, Ubuntu 26.04, Wayland) |
+| GNOME Shell | 46 to 51 (tested on GNOME 50.1, Ubuntu 26.04, Wayland; 51.1 reported working on Fedora 45) |
 | Codex | [Codex CLI](https://github.com/openai/codex) signed in with a ChatGPT account (`codex login`). Codex Desktop uses the same login file. |
 | Claude | [Claude Code](https://docs.claude.com/en/docs/claude-code) signed in with a Claude subscription (`claude auth login`). |
 | Antigravity | Optional, off by default. [Antigravity CLI](https://antigravity.google/docs/getting-started?tab=cli) (`agy`) signed in with a Google account. |
