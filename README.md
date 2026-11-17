@@ -1,11 +1,12 @@
-# AI Limits — Codex & Claude usage in the GNOME top bar
+# AI Limits — Codex, Claude & Antigravity usage in the GNOME top bar
 
 A GNOME Shell extension that shows how much of your **Codex**, **Claude** and
 **Antigravity** (Gemini) usage limits is left, right in the top bar. Click it for the 5-hour and weekly
 windows, their reset times, model-specific limits and credits.
 
 The panel reads `72 / 40`: Codex first, then Claude, each a percentage of the
-window you choose (left or used, your pick). The popup and the settings:
+window you choose (left or used, your pick). Turn on Antigravity and it becomes
+a third number, `72 / 40 / 85`. The popup and the settings:
 
 | Popup | Settings |
 |:---:|:---:|
@@ -14,6 +15,8 @@ window you choose (left or used, your pick). The popup and the settings:
 No extra sign-in and no accounts: the extension reads the login files that the
 **Codex CLI** and **Claude Code** already keep on disk and asks the same usage
 endpoints those tools use for their own `/status` and `/usage` commands.
+**Antigravity** keeps its token in the system keyring instead of a file, so its
+quota is read by running the `agy` CLI you already signed in to.
 Nothing is sent anywhere else.
 
 ## Requirements
@@ -115,10 +118,10 @@ CLAUDE_CONFIG_DIR=$HOME/.claude-work claude auth login
 
 | Setting | Meaning |
 |---|---|
-| Codex number / Claude number | Which window the panel number reflects: the 5-hour window, the weekly window, or whichever has less left. |
+| Codex number / Claude number / Antigravity number | Which window the panel number reflects: the 5-hour window, the weekly window, or whichever has less left. |
 | Panel value | Percent left (default) or percent used. The popup always shows percent used, like the official usage pages. |
 | Color the numbers | Green above 50 % left, yellow from 20 %, red below. |
-| Show Codex / Show Claude | Hide a service you do not use. |
+| Show Codex / Show Claude / Show Antigravity | Hide a service you do not use. Antigravity is off by default, because reading its quota runs the CLI. |
 | Refresh interval | Seconds between automatic updates (default 60). Opening the popup always fetches fresh data. |
 | Claude refresh interval | Claude's usage endpoint rate-limits frequent polling, so Claude is asked at most this often (default 180). *Refresh now* always asks immediately. |
 | Antigravity refresh interval | Reading Antigravity quota starts its command-line tool, which takes a few seconds, so it is asked at most this often (default 300). |

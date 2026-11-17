@@ -128,7 +128,7 @@ export default class AiLimitsPreferences extends ExtensionPreferences {
 
         const panel = new Adw.PreferencesGroup({
             title: 'Panel',
-            description: 'The panel shows "Codex / Claude" as percentages of the chosen window.',
+            description: 'The panel shows "Codex / Claude / Antigravity" as percentages of the chosen window.',
         });
         panel.add(comboRow(settings, 'codex-panel-window', 'Codex number', 'Which Codex limit the panel number reflects', WINDOW_CHOICES));
         panel.add(comboRow(settings, 'claude-panel-window', 'Claude number', 'Which Claude limit the panel number reflects', WINDOW_CHOICES));
