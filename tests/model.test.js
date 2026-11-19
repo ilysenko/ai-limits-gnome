@@ -63,14 +63,21 @@ check(agy.service === 'antigravity', 'antigravity service tag');
 check(agy.session?.usedPct === 18 && agy.session.remainingPct === 82, 'antigravity 5h bucket inverted to used%');
 check(Math.round(agy.weekly?.usedPct) === 69, 'antigravity weekly bucket');
 check(agy.weekly.resetsAt === Date.parse('2026-10-13T09:15:45Z'), 'antigravity reset_time parsed');
-check(agy.extra.length === 1 && agy.extra[0].label === 'Claude and GPT models', 'antigravity second group listed');
+check(agy.extra.length === 2 && agy.extra[0].label === 'Claude and GPT models', 'antigravity second group listed');
 check(agy.extra[0].weekly?.usedPct === 0 && agy.extra[0].session === null, 'antigravity second group windows');
 check(agy.plan === 'Gemini Models', 'antigravity names its leading group where the plan goes');
+check(agy.models.join('|') === 'Gemini 4 Neon|Gemini 4 Hydrogen|Orchestrator (Neon)|Gemini 3.8 Flash',
+    'antigravity lists the models sharing the leading quota');
+check(agy.extra[0].models.join('|') === 'Claude Opus 5.5|Claude Sonnet 5.5|GPT-OSS 120B', 'antigravity second group models');
+check(agy.extra[1].label === 'Gemini 4 Argon' && agy.extra[1].weekly?.usedPct === 75 && agy.extra[1].session === null,
+    'antigravity Argon has its own weekly quota');
+check(agy.extra[1].models.length === 0, 'a group without a model list (Argon) names no models');
 check(pickPanelWindow(agy, 'lowest').kind === 'weekly', 'antigravity lowest picks weekly');
 
 // A bucket with no window field is treated as the session one.
 const agyBare = normalizeAntigravity({command: {data: {groups: [{name: 'G', buckets: [{remaining_fraction: 0.5}]}]}}});
 check(agyBare.session?.usedPct === 50 && agyBare.weekly === null, 'antigravity bucket without a window');
+check(agyBare.models.length === 0, 'antigravity group without a description names no models');
 check(normalizeAntigravity(null).session === null && normalizeAntigravity({}).extra.length === 0, 'antigravity empty payload');
 
 // Empty / broken payloads do not throw.

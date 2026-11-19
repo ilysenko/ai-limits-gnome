@@ -114,6 +114,12 @@ class ServiceSection {
         header.add_child(this._plan);
         this.actor.add_child(header);
 
+        // Which models share the quota below (Antigravity groups several under one limit).
+        this._models = new St.Label({style_class: 'ai-limits-models'});
+        this._models.clutter_text.line_wrap = true;
+        this._models.hide();
+        this.actor.add_child(this._models);
+
         this._rows = {session: new WindowRow('5-hour'), weekly: new WindowRow('Weekly')};
         this.actor.add_child(this._rows.session.actor);
         this.actor.add_child(this._rows.weekly.actor);
@@ -131,6 +137,9 @@ class ServiceSection {
     update(entry, now) {
         const {usage, error} = entry;
         this._plan.text = usage ? formatPlan(usage.plan) : '';
+        const models = usage?.models ?? [];
+        this._models.text = models.join(' · ');
+        this._models.visible = models.length > 0;
         this._rows.session.update(usage?.session ?? null, now);
         this._rows.weekly.update(usage?.weekly ?? null, now);
 
@@ -173,6 +182,8 @@ class ServiceSection {
         this._rows = null;
         this._plan.destroy();
         this._plan = null;
+        this._models.destroy();
+        this._models = null;
         this._details.destroy();
         this._details = null;
         this._message.destroy();
@@ -190,6 +201,8 @@ class ServiceSection {
     /** A model-specific limit: its name, then the same rows as the main windows. */
     _addExtra(item, now) {
         this._details.add_child(new St.Label({text: item.label, style_class: 'ai-limits-extra-name'}));
+        if (item.models?.length > 0)
+            this._addDetail(item.models.join(' · '), 'ai-limits-models');
         for (const kind of ['session', 'weekly']) {
             if (!item[kind])
                 continue;

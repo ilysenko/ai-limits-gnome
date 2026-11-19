@@ -184,6 +184,19 @@ const antigravityGroup = (raw) => {
 };
 
 /**
+ * The models that share a group's quota. agy only lists them in prose:
+ * "Models within this group: Gemini 4 Neon, Gemini 4 Hydrogen, …". A group
+ * whose description says something else (Argon's) is a single model named by
+ * the group itself, so it gets no list.
+ */
+const antigravityModels = (raw) => {
+    const match = /models within this group:\s*(.+)$/i.exec(asText(raw?.description) ?? '');
+    if (!match)
+        return [];
+    return match[1].replace(/\.\s*$/, '').split(',').map(name => name.trim()).filter(Boolean);
+};
+
+/**
  * Quota comes grouped by model family. The first group (Gemini models) drives
  * the panel; the rest are listed under it, the way model limits are elsewhere.
  */
@@ -196,13 +209,14 @@ export function normalizeAntigravity(raw) {
     for (const group of rest) {
         const windows = antigravityGroup(group);
         if (windows.session || windows.weekly)
-            extra.push({label: asText(group.name) ?? 'Other models', ...windows});
+            extra.push({label: asText(group.name) ?? 'Other models', models: antigravityModels(group), ...windows});
     }
 
     return {
         service: 'antigravity',
         // The leading group names itself where the other services show their plan.
         plan: first ? asText(first.name) : null,
+        models: first ? antigravityModels(first) : [],
         session: main.session,
         weekly: main.weekly,
         extra,

@@ -6,6 +6,7 @@
       "groups": [
         {
           "name": "Gemini Models",
+          "description": "Models within this group: Gemini 4 Neon, Gemini 4 Hydrogen, Orchestrator (Neon), Gemini 3.8 Flash",
           "buckets": [
             {
               "id": "gemini-5h",
@@ -23,12 +24,26 @@
         },
         {
           "name": "Claude and GPT models",
+          "description": "Models within this group: Claude Opus 5.5, Claude Sonnet 5.5, GPT-OSS 120B",
           "buckets": [
             {
               "id": "3p-weekly",
               "window": "weekly",
               "remaining_fraction": 1,
               "reset_time": "2026-10-15T13:32:48Z"
+            }
+          ]
+        },
+        {
+          "name": "Gemini 4 Argon",
+          "description": "For paid Pro plans, Argon quota is separate. Higher Argon quota (included as part of the larger Gemini quota bucket) is available on Ultra plans.",
+          "buckets": [
+            {
+              "id": "gemini-argon-wtu-weekly",
+              "name": "Gemini 4 Argon Weekly Limit",
+              "window": "weekly",
+              "remaining_fraction": 0.25,
+              "reset_time": "2026-10-13T08:00:52Z"
             }
           ]
         }
