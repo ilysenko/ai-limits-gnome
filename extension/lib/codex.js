@@ -30,10 +30,6 @@ export class CodexProvider {
         });
     }
 
-    get name() {
-        return 'Codex';
-    }
-
     async fetch() {
         const path = this._options.getPath();
         const autoRefresh = this._options.autoRefresh();

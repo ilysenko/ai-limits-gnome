@@ -10,7 +10,7 @@ const asText = value => (typeof value === 'string' && value.trim() ? value.trim(
 /** "62500.0000000000" -> "62500", while "12.50" keeps its cents. */
 const trimNumber = value => String(value).replace(/\.0+$/, '');
 
-export function clampPercent(value) {
+function clampPercent(value) {
     const n = asNumber(value) ?? 0;
     return Math.min(100, Math.max(0, n));
 }
@@ -155,7 +155,7 @@ export function normalizeClaude(raw, {plan = null} = {}) {
 /* ---------- Antigravity (agy -p /usage --output-format json) ---------- */
 
 /** A bucket reports what is LEFT as a 0..1 fraction, the opposite of the other two services. */
-const antigravityBucket = (raw) => {
+function antigravityBucket(raw) {
     if (!isObject(raw))
         return null;
 
@@ -170,9 +170,9 @@ const antigravityBucket = (raw) => {
         kind: weekly ? 'weekly' : 'session',
         window: makeWindow(used, Number.isNaN(resets) ? null : resets, weekly ? ONE_WEEK : FIVE_HOURS),
     };
-};
+}
 
-const antigravityGroup = (raw) => {
+function antigravityGroup(raw) {
     const windows = {session: null, weekly: null};
     const buckets = Array.isArray(raw?.buckets) ? raw.buckets : [];
     for (const entry of buckets) {
@@ -181,7 +181,7 @@ const antigravityGroup = (raw) => {
             windows[bucket.kind] = bucket.window;
     }
     return windows;
-};
+}
 
 /**
  * The models that share a group's quota. agy only lists them in prose:
@@ -189,25 +189,27 @@ const antigravityGroup = (raw) => {
  * whose description says something else (Argon's) is a single model named by
  * the group itself, so it gets no list.
  */
-const antigravityModels = (raw) => {
+function antigravityModels(raw) {
     const match = /models within this group:\s*(.+)$/i.exec(asText(raw?.description) ?? '');
     if (!match)
         return [];
     return match[1].replace(/\.\s*$/, '').split(',').map(name => name.trim()).filter(Boolean);
-};
+}
 
 /** "Gemini Models" -> "Gemini", "Gemini 4 Argon" -> "Argon", "Claude and GPT models" -> "Claude · GPT". */
-const antigravityGroupName = (name) => {
+function antigravityGroupName(name) {
     const text = asText(name) ?? 'Other models';
     if (/^gemini models$/i.test(text))
         return 'Gemini';
     if (/^claude and gpt models$/i.test(text))
         return 'Claude · GPT';
     return text.replace(/^gemini\s+[\d.]+\s+(.+)$/i, '$1');
-};
+}
 
 /** Claude and GPT served through Antigravity, not to be confused with the Claude service itself. */
-const isThirdPartyGroup = group => /claude|gpt/i.test(`${group.label} ${group.models.join(' ')}`);
+function isThirdPartyGroup(group) {
+    return /claude|gpt/i.test(`${group.label} ${group.models.join(' ')}`);
+}
 
 /**
  * Quota comes grouped by model family, and every group is shown as an equal
@@ -277,7 +279,7 @@ export function formatPlan(plan) {
 
 /** "2h 15m", "1d 3h", "45s" — always positive, for both future and past. */
 export function formatDuration(ms) {
-    const total = Math.max(0, Math.round(Math.abs(ms) / 1000));
+    const total = Math.round(Math.abs(ms) / 1000);
     const days = Math.floor(total / 86400);
     const hours = Math.floor((total % 86400) / 3600);
     const minutes = Math.floor((total % 3600) / 60);

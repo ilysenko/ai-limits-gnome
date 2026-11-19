@@ -11,15 +11,22 @@ const ARGS = ['-p', '/usage', '--output-format', 'json', '--log-file', '/dev/nul
 const TIMEOUT_SECONDS = 45;
 const INSTALL_HINT = 'Install it from antigravity.google or set its path in the settings.';
 
+/**
+ * The CLI's default install location, then PATH; '' when neither has it.
+ * ~/.local/bin comes first because a GNOME session does not always have it on PATH.
+ */
+export function findAntigravityCli() {
+    const local = GLib.build_filenamev([GLib.get_home_dir(), '.local', 'bin', DEFAULT_COMMAND]);
+    if (GLib.file_test(local, GLib.FileTest.IS_EXECUTABLE))
+        return local;
+    return GLib.find_program_in_path(DEFAULT_COMMAND) ?? '';
+}
+
 /** Antigravity (Gemini) quota, read by running the Antigravity CLI. */
 export class AntigravityProvider {
     constructor(subprocess, options) {
         this._subprocess = subprocess;
         this._options = options; // {getCommand}
-    }
-
-    get name() {
-        return 'Antigravity';
     }
 
     async fetch() {
@@ -52,14 +59,7 @@ export class AntigravityProvider {
     }
 
     _resolveCommand() {
-        const configured = expandPath(this._options.getCommand());
-        if (configured)
-            return configured;
-        // Spawning by name needs it on PATH, which a GNOME session does not always share.
-        const local = GLib.build_filenamev([GLib.get_home_dir(), '.local', 'bin', DEFAULT_COMMAND]);
-        if (GLib.file_test(local, GLib.FileTest.IS_EXECUTABLE))
-            return local;
-        return GLib.find_program_in_path(DEFAULT_COMMAND) ?? DEFAULT_COMMAND;
+        return expandPath(this._options.getCommand()) || findAntigravityCli() || DEFAULT_COMMAND;
     }
 
     /** The CLI reports a missing login on stderr rather than with its own exit code. */

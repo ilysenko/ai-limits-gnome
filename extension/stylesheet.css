@@ -18,6 +18,12 @@
     padding: 4px 2px;
 }
 
+.ai-limits-version {
+    font-size: 0.8em;
+    color: rgba(128, 128, 128, 1);
+    margin-bottom: -14px;
+}
+
 .ai-limits-service {
     spacing: 5px;
 }
@@ -32,7 +38,6 @@
     color: #3584e4;
 }
 
-/* Everything under a service name: one step in, all at the same level. */
 .ai-limits-service-body {
     spacing: 5px;
     padding-left: 14px;

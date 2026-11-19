@@ -2,21 +2,20 @@ import {AuthError, isExpired} from './auth.js';
 
 /** Error shown in the popup; `kind` drives the panel marker and backoff. */
 export class ProviderError extends Error {
-    constructor(message, kind, status = 0) {
+    constructor(message, kind) {
         super(message);
         this.name = 'ProviderError';
         this.kind = kind; // 'file' | 'auth' | 'ratelimit' | 'http' | 'network'
-        this.status = status;
     }
 
     static throwIfFailed(response, service, loginCommand) {
         if (response.ok)
             return;
         if (response.status === 401 || response.status === 403)
-            throw new ProviderError(`${service} rejected the token (HTTP ${response.status}). Run \`${loginCommand}\` to sign in again.`, 'auth', response.status);
+            throw new ProviderError(`${service} rejected the token (HTTP ${response.status}). Run \`${loginCommand}\` to sign in again.`, 'auth');
         if (response.status === 429)
-            throw new ProviderError(`${service} is rate limiting usage requests (HTTP 429).`, 'ratelimit', response.status);
-        throw new ProviderError(`${service} usage request failed (HTTP ${response.status}).`, 'http', response.status);
+            throw new ProviderError(`${service} is rate limiting usage requests (HTTP 429).`, 'ratelimit');
+        throw new ProviderError(`${service} usage request failed (HTTP ${response.status}).`, 'http');
     }
 
     static from(error) {

@@ -1,6 +1,5 @@
 import Adw from 'gi://Adw';
 import Gio from 'gi://Gio';
-import GLib from 'gi://GLib';
 import Gtk from 'gi://Gtk';
 
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
@@ -14,20 +13,13 @@ import {
     resolveCodexAuthPath,
 } from './lib/auth.js';
 import {formatClock, formatPlan} from './lib/model.js';
+import {findAntigravityCli} from './lib/antigravity.js';
 
 const WINDOW_CHOICES = [
     ['session', '5-hour window'],
     ['weekly', 'Weekly window'],
     ['lowest', 'Whichever has less left'],
 ];
-/** Same lookup order as the extension: ~/.local/bin first, then PATH. */
-function findAgy() {
-    const local = GLib.build_filenamev([GLib.get_home_dir(), '.local', 'bin', 'agy']);
-    if (fileExists(local))
-        return local;
-    return GLib.find_program_in_path('agy') ?? '';
-}
-
 const VALUE_CHOICES = [
     ['remaining', 'Percent left'],
     ['used', 'Percent used'],
@@ -181,7 +173,7 @@ export default class AiLimitsPreferences extends ExtensionPreferences {
         const agyStatus = new Adw.ActionRow();
         agyStatus.add_css_class('property');
         const syncAgy = () => {
-            const path = expandPath(agy.text) || findAgy();
+            const path = expandPath(agy.text) || findAntigravityCli();
             agyStatus.title = path || 'agy';
             agyStatus.subtitle = path && fileExists(path) ? 'found' : 'not found — install it from antigravity.google';
         };

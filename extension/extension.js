@@ -118,11 +118,10 @@ class ServiceSection {
         header.add_child(this._plan);
         this.actor.add_child(header);
 
-        // Everything under the service name sits one step in, all at the same level.
         const body = new St.BoxLayout({...VERTICAL, style_class: 'ai-limits-service-body', x_expand: true});
         this.actor.add_child(body);
 
-        this._rows = {session: new WindowRow('5-hour'), weekly: new WindowRow('Weekly')};
+        this._rows = {session: new WindowRow(WINDOW_TITLES.session), weekly: new WindowRow(WINDOW_TITLES.weekly)};
         body.add_child(this._rows.session.actor);
         body.add_child(this._rows.weekly.actor);
 
@@ -139,9 +138,8 @@ class ServiceSection {
     update(entry, now) {
         const {usage, error} = entry;
         this._plan.text = usage ? formatPlan(usage.plan) : '';
-        // A service that comes as equal groups (Antigravity) shows each as its own block
-        // instead of one main pair of rows with the rest tucked under it.
-        // (A row given no window hides itself.)
+        // Antigravity reports equal groups, each shown as a block of its own
+        // instead of the main pair of rows.
         const groups = usage?.groups ?? null;
         this._rows.session.update(groups ? null : usage?.session ?? null, now);
         this._rows.weekly.update(groups ? null : usage?.weekly ?? null, now);
@@ -270,6 +268,13 @@ class Indicator {
         item.remove_style_class_name('popup-inactive-menu-item');
         const box = new St.BoxLayout({...VERTICAL, style_class: 'ai-limits-popup', x_expand: true});
 
+        this._version = new St.Label({
+            text: `v${this._extension.metadata['version-name'] ?? this._extension.metadata.version}`,
+            style_class: 'ai-limits-version',
+            x_align: Clutter.ActorAlign.END,
+        });
+        box.add_child(this._version);
+
         this._sections = {};
         for (const service of SERVICES) {
             this._sections[service] = new ServiceSection(SERVICE_TITLES[service]);
@@ -382,6 +387,8 @@ class Indicator {
         this._sections = null;
         this._footer.destroy();
         this._footer = null;
+        this._version.destroy();
+        this._version = null;
         for (const service of SERVICES)
             this._panelValues[service].destroy();
         this._panelValues = null;

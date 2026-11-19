@@ -40,10 +40,6 @@ export class ClaudeProvider {
         });
     }
 
-    get name() {
-        return 'Claude';
-    }
-
     async fetch() {
         const path = this._options.getPath();
         const autoRefresh = this._options.autoRefresh();

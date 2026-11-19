@@ -29,9 +29,11 @@ export class Subprocess {
         this._running.add(proc);
 
         let timeoutId = 0;
+        let timedOut = false;
         const deadline = new Promise(resolve => {
             timeoutId = GLib.timeout_add_seconds(GLib.PRIORITY_DEFAULT, timeoutSeconds, () => {
                 timeoutId = 0;
+                timedOut = true;
                 proc.force_exit();
                 resolve({ok: false, timedOut: true, status: -1, stdout: '', stderr: ''});
                 return GLib.SOURCE_REMOVE;
@@ -47,7 +49,8 @@ export class Subprocess {
                 stderr: stderr ?? '',
             }),
             error => {
-                if (this._cancellable.is_cancelled())
+                // After the deadline nobody waits for this promise any more.
+                if (timedOut || this._cancellable.is_cancelled())
                     return {ok: false, timedOut: false, status: -1, stdout: '', stderr: 'cancelled'};
                 throw error;
             });
