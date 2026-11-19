@@ -125,7 +125,7 @@ CLAUDE_CONFIG_DIR=$HOME/.claude-work claude auth login
 | Refresh interval | Seconds between automatic updates (default 60). Opening the popup always fetches fresh data. |
 | Claude refresh interval | Claude's usage endpoint rate-limits frequent polling, so Claude is asked at most this often (default 180). *Refresh now* always asks immediately. |
 | Antigravity refresh interval | Reading Antigravity quota starts its command-line tool, which takes a few seconds, so it is asked at most this often (default 300). |
-| Antigravity CLI path | Where `agy` lives. Empty means `~/.local/bin/agy`, then `agy` on PATH. |
+| Antigravity CLI | Shows where `agy` was found: `~/.local/bin/agy`, then `agy` on PATH. |
 | Refresh expired tokens | See below. |
 | Login files | Custom paths, see above. |
 

@@ -418,9 +418,7 @@ export default class AiLimitsExtension extends Extension {
                 getPath: () => resolveClaudeCredentialsPath(this._settings.get_string('claude-credentials-path')),
                 autoRefresh: () => this._settings.get_boolean('auto-refresh-tokens'),
             }),
-            antigravity: new AntigravityProvider(this._subprocess, {
-                getCommand: () => this._settings.get_string('antigravity-command'),
-            }),
+            antigravity: new AntigravityProvider(this._subprocess),
         };
 
         this._state = {updating: false, backoffUntil: 0, lastSuccess: 0};
@@ -440,7 +438,6 @@ export default class AiLimitsExtension extends Extension {
             this._settings.connect('changed::refresh-interval-seconds', () => this._schedule()),
             this._settings.connect('changed::claude-refresh-interval-seconds', refetch),
             this._settings.connect('changed::antigravity-refresh-interval-seconds', refetch),
-            this._settings.connect('changed::antigravity-command', refetch),
             this._settings.connect('changed::show-antigravity', refetch),
             this._settings.connect('changed::antigravity-panel-window', rerender),
             this._settings.connect('changed::codex-auth-path', refetch),

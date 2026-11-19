@@ -2,8 +2,8 @@
   "uuid": "ai-limits@igor.lysenko",
   "name": "AI Limits",
   "description": "Shows how much of your Codex, Claude and Antigravity (Gemini) usage limits is left, right in the top panel. Click for the 5-hour and weekly windows and their reset times. Codex and Claude are read from their local login files; Antigravity is optional and reads its CLI.",
-  "version": 11,
-  "version-name": "1.2.2",
+  "version": 12,
+  "version-name": "1.2.3",
   "shell-version": [
     "46",
     "47",

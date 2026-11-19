@@ -20,11 +20,6 @@
       <summary>Minimum seconds between Antigravity requests</summary>
       <description>Reading Antigravity quota starts its command-line tool, which takes several seconds, so it is asked at most this often. "Refresh now" always asks immediately.</description>
     </key>
-    <key name="antigravity-command" type="s">
-      <default>''</default>
-      <summary>Antigravity CLI path</summary>
-      <description>Path to the Antigravity command-line tool. Leave empty to use ~/.local/bin/agy or agy on PATH.</description>
-    </key>
     <key name="antigravity-panel-window" type="s">
       <choices>
         <choice value="session"/>

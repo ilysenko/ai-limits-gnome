@@ -4,7 +4,7 @@ import Gtk from 'gi://Gtk';
 
 import {ExtensionPreferences} from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
 
-import {expandPath, fileExists, readJson} from './lib/files.js';
+import {fileExists, readJson} from './lib/files.js';
 import {
     isExpired,
     parseClaudeCredentials,
@@ -168,19 +168,12 @@ export default class AiLimitsPreferences extends ExtensionPreferences {
         for (const row of pathRow(settings, 'claude-credentials-path', 'Claude .credentials.json', resolveClaudeCredentialsPath, parseClaudeCredentials))
             files.add(row);
 
-        const agy = new Adw.EntryRow({title: 'Antigravity CLI path'});
-        settings.bind('antigravity-command', agy, 'text', Gio.SettingsBindFlags.DEFAULT);
-        const agyStatus = new Adw.ActionRow();
-        agyStatus.add_css_class('property');
-        const syncAgy = () => {
-            const path = expandPath(agy.text) || findAntigravityCli();
-            agyStatus.title = path || 'agy';
-            agyStatus.subtitle = path && fileExists(path) ? 'found' : 'not found — install it from antigravity.google';
-        };
-        agy.connect('changed', syncAgy);
-        syncAgy();
-        files.add(agy);
-        files.add(agyStatus);
+        const agy = findAntigravityCli();
+        files.add(new Adw.ActionRow({
+            title: 'Antigravity CLI',
+            subtitle: agy || 'agy not found in ~/.local/bin or on PATH — install it from antigravity.google',
+            css_classes: ['property'],
+        }));
         page.add(files);
 
         window.add(page);
