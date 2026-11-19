@@ -192,6 +192,8 @@ class ServiceSection {
         this._rows.session.destroy();
         this._rows.weekly.destroy();
         this._rows = null;
+        this._divider.destroy();
+        this._divider = null;
         this._plan.destroy();
         this._plan = null;
         this._details.destroy();
