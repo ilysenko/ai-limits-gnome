@@ -108,49 +108,57 @@ class ServiceSection {
     constructor(title) {
         this.actor = new St.BoxLayout({...VERTICAL, style_class: 'ai-limits-service', x_expand: true});
 
+        // The line between services; the popup hides it on the first visible one.
+        this._divider = new St.Widget({style_class: 'ai-limits-service-divider', x_expand: true});
+        this.actor.add_child(this._divider);
+
         const header = new St.BoxLayout({style_class: 'ai-limits-service-header', x_expand: true});
         this._plan = new St.Label({style_class: 'ai-limits-service-plan', y_align: Clutter.ActorAlign.CENTER});
         header.add_child(new St.Label({text: title, style_class: 'ai-limits-service-name', y_align: Clutter.ActorAlign.CENTER}));
         header.add_child(this._plan);
         this.actor.add_child(header);
 
-        // Which models share the quota below (Antigravity groups several under one limit).
-        this._models = new St.Label({style_class: 'ai-limits-models'});
-        this._models.clutter_text.line_wrap = true;
-        this._models.hide();
-        this.actor.add_child(this._models);
+        // Everything under the service name sits one step in, all at the same level.
+        const body = new St.BoxLayout({...VERTICAL, style_class: 'ai-limits-service-body', x_expand: true});
+        this.actor.add_child(body);
 
         this._rows = {session: new WindowRow('5-hour'), weekly: new WindowRow('Weekly')};
-        this.actor.add_child(this._rows.session.actor);
-        this.actor.add_child(this._rows.weekly.actor);
+        body.add_child(this._rows.session.actor);
+        body.add_child(this._rows.weekly.actor);
 
         this._details = new St.BoxLayout({...VERTICAL, x_expand: true});
         this._extraRows = [];
-        this.actor.add_child(this._details);
+        body.add_child(this._details);
 
         this._message = new St.Label({style_class: 'ai-limits-error'});
         this._message.clutter_text.line_wrap = true;
         this._message.hide();
-        this.actor.add_child(this._message);
+        body.add_child(this._message);
     }
 
     update(entry, now) {
         const {usage, error} = entry;
         this._plan.text = usage ? formatPlan(usage.plan) : '';
-        const models = usage?.models ?? [];
-        this._models.text = models.join(' · ');
-        this._models.visible = models.length > 0;
-        this._rows.session.update(usage?.session ?? null, now);
-        this._rows.weekly.update(usage?.weekly ?? null, now);
+        // A service that comes as equal groups (Antigravity) shows each as its own block
+        // instead of one main pair of rows with the rest tucked under it.
+        // (A row given no window hides itself.)
+        const groups = usage?.groups ?? null;
+        this._rows.session.update(groups ? null : usage?.session ?? null, now);
+        this._rows.weekly.update(groups ? null : usage?.weekly ?? null, now);
 
         this._clearDetails();
-        if (usage) {
+        if (groups) {
+            for (const group of groups)
+                this._addExtra(group, now);
+            if (groups.length === 0)
+                this._addDetail('No quota reported', 'ai-limits-note');
+        } else if (usage) {
             for (const kind of ['session', 'weekly']) {
                 if (!usage[kind])
                     this._addDetail(`${WINDOW_TITLES[kind]} window: not provided for this plan`, 'ai-limits-note');
             }
-            if (usage.extra.length > 0)
-                this._details.add_child(new St.Widget({style_class: 'ai-limits-divider', x_expand: true}));
+        }
+        if (usage) {
             for (const item of usage.extra)
                 this._addExtra(item, now);
             for (const note of usage.notes)
@@ -168,6 +176,10 @@ class ServiceSection {
         }
     }
 
+    set dividerVisible(visible) {
+        this._divider.visible = visible;
+    }
+
     _clearDetails() {
         for (const row of this._extraRows)
             row.destroy();
@@ -182,8 +194,6 @@ class ServiceSection {
         this._rows = null;
         this._plan.destroy();
         this._plan = null;
-        this._models.destroy();
-        this._models = null;
         this._details.destroy();
         this._details = null;
         this._message.destroy();
@@ -207,7 +217,6 @@ class ServiceSection {
             if (!item[kind])
                 continue;
             const row = new WindowRow(WINDOW_TITLES[kind]);
-            row.actor.add_style_class_name('ai-limits-row-sub');
             row.update(item[kind], now);
             this._details.add_child(row.actor);
             this._extraRows.push(row);
@@ -325,6 +334,7 @@ class Indicator {
         for (const service of SERVICES) {
             const visibleHere = this._panelValues[service].visible;
             this._panelSeparators[service].visible = visibleHere && shown > 0;
+            this._sections[service].dividerVisible = visibleHere && shown > 0;
             if (visibleHere)
                 shown++;
         }

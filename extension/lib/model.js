@@ -196,30 +196,39 @@ const antigravityModels = (raw) => {
     return match[1].replace(/\.\s*$/, '').split(',').map(name => name.trim()).filter(Boolean);
 };
 
+/** "Gemini Models" -> "Gemini", "Gemini 4 Argon" -> "Argon", "Claude and GPT models" -> "Claude · GPT". */
+const antigravityGroupName = (name) => {
+    const text = asText(name) ?? 'Other models';
+    if (/^gemini models$/i.test(text))
+        return 'Gemini';
+    if (/^claude and gpt models$/i.test(text))
+        return 'Claude · GPT';
+    return text.replace(/^gemini\s+[\d.]+\s+(.+)$/i, '$1');
+};
+
+/** Claude and GPT served through Antigravity, not to be confused with the Claude service itself. */
+const isThirdPartyGroup = group => /claude|gpt/i.test(`${group.label} ${group.models.join(' ')}`);
+
 /**
- * Quota comes grouped by model family. The first group (Gemini models) drives
- * the panel; the rest are listed under it, the way model limits are elsewhere.
+ * Quota comes grouped by model family, and every group is shown as an equal
+ * block of its own: Gemini first, then the separate ones (Argon), and the
+ * Claude/GPT group last so it does not read as the Claude service. The first
+ * block (Gemini) drives the panel number.
  */
 export function normalizeAntigravity(raw) {
-    const groups = Array.isArray(raw?.command?.data?.groups) ? raw.command.data.groups : [];
-    const [first, ...rest] = groups.filter(isObject);
-    const main = first ? antigravityGroup(first) : {session: null, weekly: null};
-
-    const extra = [];
-    for (const group of rest) {
-        const windows = antigravityGroup(group);
-        if (windows.session || windows.weekly)
-            extra.push({label: asText(group.name) ?? 'Other models', models: antigravityModels(group), ...windows});
-    }
+    const rawGroups = Array.isArray(raw?.command?.data?.groups) ? raw.command.data.groups : [];
+    const groups = rawGroups.filter(isObject)
+        .map(group => ({label: antigravityGroupName(group.name), models: antigravityModels(group), ...antigravityGroup(group)}))
+        .filter(group => group.session || group.weekly);
+    groups.sort((a, b) => Number(isThirdPartyGroup(a)) - Number(isThirdPartyGroup(b)));
 
     return {
         service: 'antigravity',
-        // The leading group names itself where the other services show their plan.
-        plan: first ? asText(first.name) : null,
-        models: first ? antigravityModels(first) : [],
-        session: main.session,
-        weekly: main.weekly,
-        extra,
+        plan: null,
+        session: groups[0]?.session ?? null,
+        weekly: groups[0]?.weekly ?? null,
+        groups,
+        extra: [],
         notes: [],
     };
 }

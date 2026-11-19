@@ -13,7 +13,7 @@
 
 /* Popup */
 .ai-limits-popup {
-    spacing: 22px;
+    spacing: 14px;
     min-width: 360px;
     padding: 4px 2px;
 }
@@ -28,7 +28,14 @@
 
 .ai-limits-service-name {
     font-weight: bold;
-    font-size: 1.1em;
+    font-size: 1.25em;
+    color: #3584e4;
+}
+
+/* Everything under a service name: one step in, all at the same level. */
+.ai-limits-service-body {
+    spacing: 5px;
+    padding-left: 14px;
 }
 
 .ai-limits-service-plan {
@@ -72,26 +79,22 @@
     font-size: 0.9em;
 }
 
-.ai-limits-divider {
+.ai-limits-service-divider {
     height: 1px;
-    margin: 8px 0 0 0;
+    margin-bottom: 10px;
     background-color: rgba(128, 128, 128, 0.35);
 }
 
 .ai-limits-extra-name {
     font-weight: bold;
     font-size: 0.95em;
-    padding-top: 12px;
+    padding-top: 8px;
 }
 
 .ai-limits-models {
     font-size: 0.85em;
     color: rgba(128, 128, 128, 1);
     padding-bottom: 2px;
-}
-
-.ai-limits-row-sub {
-    padding-left: 10px;
 }
 
 .ai-limits-note {
